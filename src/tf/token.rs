@@ -43,11 +43,22 @@ pub struct Ports {
 
 // create new Token based on a given String
 impl Token {
-    /// create new Token based on a given token string
     pub fn new(raw_token: String) -> Result<Token, DshError> {
-        //split token and get [1] part
+        use base64::{alphabet, engine, read};
+        use std::io::Read;
+
+        // Split token and get the [1] part
         let split_token = raw_token.split('.').collect::<Vec<&str>>();
-        let decoded_token = base64::decode(split_token[1])?;
+
+        // Create an instance of the GeneralPurpose engine with the STANDARD alphabet
+        let engine =
+            engine::GeneralPurpose::new(&alphabet::STANDARD, engine::general_purpose::NO_PAD);
+
+        // Decode the token using DecoderReader
+        let mut decoder = read::DecoderReader::new(split_token[1].as_bytes(), &engine);
+        let mut decoded_token = Vec::new();
+        decoder.read_to_end(&mut decoded_token)?;
+
         let token_attributes: TokenAttributes = serde_json::from_slice(&decoded_token)?;
         let token = Token {
             raw_token,
