@@ -1,5 +1,5 @@
 # DSH CLI tool
-[![Build Status](https://github.com/Arend-Jan/dsh/actions/workflows/main.yml/badge.svg)](https://github.com/Arend-Jan/dsh/actions/workflows/main.yml)
+[![Build Status](https://github.com/kpn-dsh/dsh/actions/workflows/main.yml/badge.svg)](https://github.com/kpn-dsh/dsh/actions/workflows/main.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Maturity

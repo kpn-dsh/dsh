@@ -1,0 +1,36 @@
+[package]
+name		= "dsh"
+version		= "0.1.0"
+edition		= "2021"
+authors		= ["Arend-Jan Oosterveld <arendjan.oosterveld@gmail.com>"]
+description = "A cli tool for Data Services Hub from KPN. The goal is to support fetching of access tokens, managing tenant containers via the DSH rest API, beeing a MQTT client for testing purposes and act as a simulator."
+license		= "Apache License 2.0"
+readme		= "README.md"
+keywords	= ["cli", "dsh", "kpn", "data services hub", "token", "mqtt"]
+categories	= ["command-line-utilities"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base64 = "0.13"
+clap = { version = "3.2", features = ["derive"] }
+confy = "0.5"
+crossterm = "0.25"
+dialoguer = "0.10"
+env_logger = "0.9"
+futures = "0.3"
+jwt = "0.16"
+log = "0.4"
+once_cell = "1.14"
+regex = "1.6"
+reqwest = { version = "0.11", features = ["json"] }
+rumqttc = { version = "0.18", features = ["websocket", "use-rustls"] }
+rustls = "0.20"
+rustls-native-certs = "0.6"
+securestore = "0.100"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.20", features = ["full"] }
+tui = "0.19"
+unicode-width = "0.1"
+uuid = { version = "1.1", features = ["serde", "v4"] }
