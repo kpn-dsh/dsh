@@ -41,10 +41,8 @@ impl Client {
             if !token.token_attributes.ports.mqttwss.contains(&port) {
                 return Err(DshError::PortNotPresentInToken(port));
             }
-        } else {
-            if !token.token_attributes.ports.mqtts.contains(&port) {
-                return Err(DshError::PortNotPresentInToken(port));
-            }
+        } else if !token.token_attributes.ports.mqtts.contains(&port) {
+            return Err(DshError::PortNotPresentInToken(port));
         }
 
         Ok(Self {
@@ -177,10 +175,8 @@ impl Client {
                                 if verbose_input {
                                     println!("Event: {:?}", notification);
                                 }
-                            } else {
-                                if !concise_input {
-                                    println!("Event: {:?}", notification);
-                                }
+                            } else if !concise_input {
+                                println!("Event: {:?}", notification);
                             }
                         }
                         Err(e) => {
@@ -215,7 +211,7 @@ impl Client {
         message: String,
     ) -> Result<(), DshError> {
         // remove '#' and '+' from topic if this exists
-        let topic = topic.replace("#", "").replace("+", "");
+        let topic = topic.replace(['#', '+'], "");
 
         info!("Publishing message...");
         client
