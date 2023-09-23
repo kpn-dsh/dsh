@@ -33,7 +33,7 @@ pub struct Command {
     #[clap(short = 'k', long, default_value = "1")]
     pub concurrent_connections: usize,
     /// Location of the output file. If not specified, the output is written to stdout.
-    #[clap(short, long, parse(from_os_str))]
+    #[clap(short, long)]
     pub output: Option<PathBuf>,
 }
 
