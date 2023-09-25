@@ -1,6 +1,7 @@
 # DSH CLI tool
 [![Build Status](https://github.com/kpn-dsh/dsh/actions/workflows/main.yml/badge.svg)](https://github.com/kpn-dsh/dsh/actions/workflows/main.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![codecov](https://codecov.io/gh/kpn-dsh/dsh/graph/badge.svg?token=CN033VD669)](https://codecov.io/gh/kpn-dsh/dsh)
 
 ## Maturity
 It is still very early days for this application. No real testing or looking at security implications has been conducted. Don't use this tool for any real project.
