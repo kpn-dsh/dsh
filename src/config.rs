@@ -207,7 +207,6 @@ pub fn run(opt: &Command) -> Result<(), DshError> {
 // test config
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     const TEST_CONFIG_NAME: &str = "test_dsh_config";
