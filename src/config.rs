@@ -5,10 +5,12 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::sync::RwLock;
 
+// Define static constants and configurations
 static CACHED_CONFIG: Lazy<RwLock<Option<Config>>> = Lazy::new(|| RwLock::new(None));
 const SERVICE_NAME: &str = "dsh";
 const CONFIG_KEY: &str = "dsh_config";
 
+/// Represents the command-line arguments and options for the application.
 #[derive(Parser, Debug)]
 pub struct Command {
     /// Set the name of the tenant
@@ -34,6 +36,7 @@ pub struct Command {
     clean_secret_store: bool,
 }
 
+// Global configuration instance
 pub static CONFIG: Lazy<Mutex<Config>> = Lazy::new(|| {
     let c = Config::load(None).unwrap_or_else(|e| {
         eprintln!("Error while loading config: {}", e);
@@ -42,6 +45,7 @@ pub static CONFIG: Lazy<Mutex<Config>> = Lazy::new(|| {
     Mutex::new(c)
 });
 
+/// Represents the application configuration.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Config {
     pub tenant: String,
@@ -51,6 +55,7 @@ pub struct Config {
     pub websocket: bool,
 }
 
+// Default values for Config
 impl ::std::default::Default for Config {
     fn default() -> Self {
         Config {
@@ -63,9 +68,9 @@ impl ::std::default::Default for Config {
     }
 }
 
-// implement Config
+// Implementation of Config methods
 impl Config {
-    // new Config with default values
+    /// Create a new Config with default values
     pub fn new() -> Self {
         let config = Config {
             ..Default::default()
@@ -75,41 +80,38 @@ impl Config {
         config
     }
 
-    // fn set tenant
+    // Setter methods for Config fields
     pub fn tenant(&mut self, tenant: &str) -> Result<Config, DshError> {
         self.tenant = tenant.to_string();
         self.save(None)?;
         Ok(self.clone())
     }
 
-    // fn set api_key
     pub fn api_key(&mut self, api_key: &str) -> Result<Config, DshError> {
         self.api_key = api_key.to_string();
         self.save(None)?;
         Ok(self.clone())
     }
 
-    // fn set domain
     pub fn domain(&mut self, domain: &str) -> Result<Config, DshError> {
         self.domain = domain.to_string();
         self.save(None)?;
         Ok(self.clone())
     }
 
-    // fn set port
     pub fn port(&mut self, port: u16) -> Result<Config, DshError> {
         self.port = port;
         self.save(None)?;
         Ok(self.clone())
     }
 
-    // fn set websocket
     pub fn websocket(&mut self, websocket: bool) -> Result<Config, DshError> {
         self.websocket = websocket;
         self.save(None)?;
         Ok(self.clone())
     }
 
+    /// Save the current configuration to the OS secret store
     pub fn save(&mut self, config_name: Option<&str>) -> Result<(), DshError> {
         let serialized_config = serde_json::to_string(&self)?;
 
@@ -121,6 +123,7 @@ impl Config {
         Ok(())
     }
 
+    /// Clean the OS secret store for the given config_name
     pub fn clean_secret_store(config_name: Option<&str>) -> Result<(), DshError> {
         let key_name = config_name.unwrap_or(CONFIG_KEY);
         let entry = keyring::Entry::new(SERVICE_NAME, key_name)?;
@@ -142,6 +145,7 @@ impl Config {
         }
     }
 
+    /// Load the configuration from the OS secret store or cache
     pub fn load(config_name: Option<&str>) -> Result<Config, DshError> {
         // Check if the configuration is already cached
         {
@@ -175,6 +179,7 @@ impl Config {
     }
 }
 
+/// Main function to run the application based on the provided command-line options
 pub fn run(opt: &Command) -> Result<(), DshError> {
     // store opt values in config
     let mut config = CONFIG.lock().unwrap();
@@ -207,7 +212,7 @@ pub fn run(opt: &Command) -> Result<(), DshError> {
     Ok(())
 }
 
-// test config
+// Unit tests for the Config struct
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,7 +240,7 @@ mod tests {
         assert_eq!(config.api_key, "");
         assert_eq!(config.domain, "api.poc.kpn-dsh.com".to_string());
         assert_eq!(config.port, 8883);
-        assert_eq!(config.websocket, true);
+        assert!(config.websocket);
         teardown();
     }
 
@@ -271,7 +276,7 @@ mod tests {
     fn test_set_websocket() {
         let mut config = Config::new();
         config.websocket(true).unwrap();
-        assert_eq!(config.websocket, true);
+        assert!(config.websocket);
     }
 
     #[test]
