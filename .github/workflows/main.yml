@@ -36,11 +36,11 @@ jobs:
         env:
           RUST_BACKTRACE: 1
       - name: test
-        run: cargo test --  --test-threads=1
+        run: cargo test --features mock_os_secret_store --  --test-threads=1
         env:
           RUST_BACKTRACE: 1
       - name: ignored test
-        run: cargo test -- --ignored || true
+        run: cargo test --features mock_os_secret_store -- --ignored || true
         env:
           RUST_BACKTRACE: 1
         if: matrix.version == 'nightly'
@@ -73,7 +73,7 @@ jobs:
       - name: build
         run: cargo build
       - name: test
-        run: cargo test -- --test-threads=1 || true
+        run: cargo test --features mock_os_secret_store -- --test-threads=1 || true
         env:
           RUST_BACKTRACE: 1
   mac:
@@ -96,7 +96,7 @@ jobs:
       - name: build
         run: cargo build
       - name: test
-        run: cargo test -- --test-threads=1 || true
+        run: cargo test --features mock_os_secret_store -- --test-threads=1 || true
         env:
           RUST_BACKTRACE: 1
   coverage:

@@ -216,10 +216,15 @@ pub fn run(opt: &Command) -> Result<(), DshError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "mock_os_secret_store")]
+    use keyring::{mock, set_default_credential_builder};
 
     const TEST_CONFIG_NAME: &str = "test_dsh_config";
 
     fn setup() {
+        #[cfg(feature = "mock_os_secret_store")]
+        set_default_credential_builder(mock::default_credential_builder());
+
         // Clean the secret store with the test-specific config_name before each test
         Config::clean_secret_store(Some(TEST_CONFIG_NAME)).unwrap();
     }
@@ -227,9 +232,6 @@ mod tests {
     fn teardown() {
         // Clean the secret store with the test-specific config_name after each test
         Config::clean_secret_store(Some(TEST_CONFIG_NAME)).unwrap();
-
-        //        let mut cache = CACHED_CONFIG.write().expect("Failed to obtain write lock");
-        //        *cache = None;
     }
 
     #[test]
