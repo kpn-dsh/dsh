@@ -125,6 +125,9 @@ impl Config {
         let key_name = config_name.unwrap_or(CONFIG_KEY);
         let entry = keyring::Entry::new(SERVICE_NAME, key_name)?;
 
+        let mut cache = CACHED_CONFIG.write().expect("Failed to obtain write lock");
+        *cache = None;
+
         match entry.get_password() {
             Ok(_) => {
                 // If password retrieval is successful, delete the entry
@@ -219,6 +222,9 @@ mod tests {
     fn teardown() {
         // Clean the secret store with the test-specific config_name after each test
         Config::clean_secret_store(Some(TEST_CONFIG_NAME)).unwrap();
+
+        //        let mut cache = CACHED_CONFIG.write().expect("Failed to obtain write lock");
+        //        *cache = None;
     }
 
     #[test]
