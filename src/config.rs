@@ -282,6 +282,15 @@ mod tests {
     }
 
     #[test]
+    fn test_load_empty_secret_store() {
+        setup();
+        let stored_config = Config::load(Some(TEST_CONFIG_NAME)).unwrap();
+        let config = Config::new();
+        assert_eq!(config, stored_config);
+        teardown();
+    }
+
+    #[test]
     fn test_store_config() {
         setup();
         let mut config = Config::new();
