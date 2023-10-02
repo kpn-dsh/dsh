@@ -216,6 +216,7 @@ pub fn run(opt: &Command) -> Result<(), DshError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[cfg(feature = "mock_os_secret_store")]
     use keyring::{mock, set_default_credential_builder};
 
