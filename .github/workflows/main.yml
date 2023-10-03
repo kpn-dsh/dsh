@@ -46,6 +46,10 @@ jobs:
         if: matrix.version == 'nightly'
       - name: check formatting
         run: cargo fmt -- --check
+      - name: install audit
+        run: cargo install cargo-audit
+      - name: audit check
+        run: cargo audit
   windows:
     runs-on: windows-latest
     strategy:
@@ -76,6 +80,11 @@ jobs:
         run: cargo test --features mock_os_secret_store -- --test-threads=1 || true
         env:
           RUST_BACKTRACE: 1
+      - name: install audit
+        run: cargo install cargo-audit
+      - name: audit check
+        run: cargo audit
+ 
   mac:
     runs-on: macos-latest
     strategy:
@@ -99,6 +108,10 @@ jobs:
         run: cargo test --features mock_os_secret_store -- --test-threads=1 || true
         env:
           RUST_BACKTRACE: 1
+      - name: install audit
+        run: cargo install cargo-audit
+      - name: audit check
+        run: cargo audit
   coverage:
     runs-on: ubuntu-latest
     name: ubuntu / stable / coverage
