@@ -302,6 +302,8 @@ mod tests {
         config.port(111).unwrap();
         config.websocket(true).unwrap();
         config.save(Some(TEST_CONFIG_NAME)).unwrap();
+        // TODO: it would be great to add a statefull version of mocking this test and validate the
+        // stored config from the mock secret store
         teardown();
     }
 
