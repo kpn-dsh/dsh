@@ -9,6 +9,9 @@ readme		= "README.md"
 keywords	= ["cli", "dsh", "kpn", "data services hub", "token", "mqtt"]
 categories	= ["command-line-utilities"]
 
+[features]
+mock_os_secret_store = []
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -20,6 +23,7 @@ dialoguer = "0.11"
 env_logger = "0.10"
 futures = "0.3"
 jwt = "0.16"
+keyring = "2.0"
 log = "0.4"
 once_cell = "1.14"
 regex = "1.6"
@@ -31,6 +35,5 @@ securestore = "0.100"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.20", features = ["full"] }
-tui = "0.19"
 unicode-width = "0.1"
 uuid = { version = "1.1", features = ["serde", "v4"] }

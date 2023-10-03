@@ -13,6 +13,7 @@ pub enum DshError {
     Mqtt(rumqttc::Error),
     MqttConnection(rumqttc::ConnectionError),
     Confy(confy::ConfyError),
+    KeyringError(keyring::Error),
 }
 
 /// From ConfyError
@@ -99,6 +100,13 @@ impl From<u16> for DshError {
     }
 }
 
+/// From KeyringError
+impl From<keyring::Error> for DshError {
+    fn from(error: keyring::Error) -> Self {
+        DshError::KeyringError(error)
+    }
+}
+
 impl std::fmt::Display for DshError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -113,6 +121,7 @@ impl std::fmt::Display for DshError {
             DshError::MqttConnection(e) => write!(f, "Mqtt connection error: {}", e),
             DshError::Confy(e) => write!(f, "Confy error: {}", e),
             DshError::PortNotPresentInToken(e) => write!(f, "Port not present in token: {}", e),
+            DshError::KeyringError(e) => write!(f, "Keyring Error: {}", e),
         }
     }
 }

@@ -3,7 +3,14 @@ use clap::Parser;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
+use std::sync::RwLock;
 
+// Define static constants and configurations
+static CACHED_CONFIG: Lazy<RwLock<Option<Config>>> = Lazy::new(|| RwLock::new(None));
+const SERVICE_NAME: &str = "dsh";
+const CONFIG_KEY: &str = "dsh_config";
+
+/// Represents the command-line arguments and options for the application.
 #[derive(Parser, Debug)]
 pub struct Command {
     /// Set the name of the tenant
@@ -24,8 +31,12 @@ pub struct Command {
     /// See the current configuration
     #[clap(short, long)]
     show_all: bool,
+    /// Clean the OS secret store
+    #[clap(short, long)]
+    clean_secret_store: bool,
 }
 
+// Global configuration instance
 pub static CONFIG: Lazy<Mutex<Config>> = Lazy::new(|| {
     let c = Config::load(None).unwrap_or_else(|e| {
         eprintln!("Error while loading config: {}", e);
@@ -34,6 +45,7 @@ pub static CONFIG: Lazy<Mutex<Config>> = Lazy::new(|| {
     Mutex::new(c)
 });
 
+/// Represents the application configuration.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Config {
     pub tenant: String,
@@ -43,6 +55,7 @@ pub struct Config {
     pub websocket: bool,
 }
 
+// Default values for Config
 impl ::std::default::Default for Config {
     fn default() -> Self {
         Config {
@@ -55,9 +68,9 @@ impl ::std::default::Default for Config {
     }
 }
 
-// implement Config
+// Implementation of Config methods
 impl Config {
-    // new Config with default values
+    /// Create a new Config with default values
     pub fn new() -> Self {
         let config = Config {
             ..Default::default()
@@ -67,56 +80,107 @@ impl Config {
         config
     }
 
-    // fn set tenant
+    // Setter methods for Config fields
     pub fn tenant(&mut self, tenant: &str) -> Result<Config, DshError> {
         self.tenant = tenant.to_string();
         self.save(None)?;
         Ok(self.clone())
     }
 
-    // fn set api_key
     pub fn api_key(&mut self, api_key: &str) -> Result<Config, DshError> {
         self.api_key = api_key.to_string();
         self.save(None)?;
         Ok(self.clone())
     }
 
-    // fn set domain
     pub fn domain(&mut self, domain: &str) -> Result<Config, DshError> {
         self.domain = domain.to_string();
         self.save(None)?;
         Ok(self.clone())
     }
 
-    // fn set port
     pub fn port(&mut self, port: u16) -> Result<Config, DshError> {
         self.port = port;
         self.save(None)?;
         Ok(self.clone())
     }
 
-    // fn set websocket
     pub fn websocket(&mut self, websocket: bool) -> Result<Config, DshError> {
         self.websocket = websocket;
         self.save(None)?;
         Ok(self.clone())
     }
 
-    pub fn load(config_name: Option<&str>) -> Result<Config, DshError> {
-        let file = confy::get_configuration_file_path("dsh", config_name)?;
-        debug!("Loading config from file: {:?}", file);
-        let cfg: Config = confy::load("dsh", config_name)?;
-        debug!("Loaded config: {:?}", cfg);
-        Ok(cfg)
+    /// Save the current configuration to the OS secret store
+    pub fn save(&mut self, config_name: Option<&str>) -> Result<(), DshError> {
+        let serialized_config = serde_json::to_string(&self)?;
+
+        // Use the provided config_name or fall back to the default CONFIG_KEY
+        let key_name = config_name.unwrap_or(CONFIG_KEY);
+
+        let entry = keyring::Entry::new(SERVICE_NAME, key_name)?;
+        entry.set_password(&serialized_config)?;
+
+        Ok(())
     }
 
-    pub fn save(&mut self, config_name: Option<&str>) -> Result<(), DshError> {
-        debug!("Saving config: {:?}", self);
-        confy::store("dsh", config_name, self.clone())?;
-        Ok(())
+    /// Clean the OS secret store for the given config_name
+    pub fn clean_secret_store(config_name: Option<&str>) -> Result<(), DshError> {
+        let key_name = config_name.unwrap_or(CONFIG_KEY);
+        let entry = keyring::Entry::new(SERVICE_NAME, key_name)?;
+
+        let mut cache = CACHED_CONFIG.write().expect("Failed to obtain write lock");
+        *cache = None;
+
+        match entry.get_password() {
+            Ok(_) => {
+                // If password retrieval is successful, delete the entry
+                entry.delete_password()?;
+                Ok(())
+            }
+            Err(keyring::Error::NoEntry) => {
+                // If there's no entry, do nothing and return Ok
+                Ok(())
+            }
+            Err(e) => Err(DshError::from(e)), // Handle other errors
+        }
+    }
+
+    /// Load the configuration from the OS secret store or cache
+    pub fn load(config_name: Option<&str>) -> Result<Config, DshError> {
+        // Check if the configuration is already cached
+        {
+            let cached_config_read = CACHED_CONFIG.read().unwrap();
+            if let Some(cached_config) = &*cached_config_read {
+                return Ok(cached_config.clone());
+            }
+        }
+
+        // If not cached, fetch from the OS secret store
+        let key_name = config_name.unwrap_or(CONFIG_KEY);
+        let entry = keyring::Entry::new(SERVICE_NAME, key_name)?;
+        let serialized_config = match entry.get_password() {
+            Ok(config) => config,
+            Err(keyring::Error::NoEntry) => {
+                let mut new_entry = Config::default();
+                new_entry.save(Some(key_name))?;
+                return Ok(new_entry);
+            }
+            Err(e) => return Err(DshError::from(e)),
+        };
+        let config: Config = serde_json::from_str(&serialized_config)?;
+
+        // Cache the fetched configuration
+        {
+            let mut cached_config_write = CACHED_CONFIG.write().unwrap();
+            *cached_config_write = Some(config.clone());
+        }
+
+        Ok(config)
     }
 }
 
+/// Main function to run the application based on the provided command-line options
 pub fn run(opt: &Command) -> Result<(), DshError> {
     // store opt values in config
     let mut config = CONFIG.lock().unwrap();
@@ -142,23 +206,46 @@ pub fn run(opt: &Command) -> Result<(), DshError> {
         println!("port: {}", config.port);
         println!("websocket: {}", config.websocket);
     }
+    if opt.clean_secret_store {
+        return Config::clean_secret_store(None);
+    }
     config.save(None)?;
     Ok(())
 }
 
-// test config
+// Unit tests for the Config struct
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[cfg(feature = "mock_os_secret_store")]
+    use keyring::{mock, set_default_credential_builder};
+
+    const TEST_CONFIG_NAME: &str = "test_dsh_config";
+
+    fn setup() {
+        #[cfg(feature = "mock_os_secret_store")]
+        set_default_credential_builder(mock::default_credential_builder());
+
+        // Clean the secret store with the test-specific config_name before each test
+        Config::clean_secret_store(Some(TEST_CONFIG_NAME)).unwrap();
+    }
+
+    fn teardown() {
+        // Clean the secret store with the test-specific config_name after each test
+        Config::clean_secret_store(Some(TEST_CONFIG_NAME)).unwrap();
+    }
+
     #[test]
     fn test_default_config() {
+        setup();
         let config = Config::new();
         assert_eq!(config.tenant, "");
         assert_eq!(config.api_key, "");
         assert_eq!(config.domain, "api.poc.kpn-dsh.com".to_string());
         assert_eq!(config.port, 8883);
-        assert_eq!(config.websocket, true);
+        assert!(config.websocket);
+        teardown();
     }
 
     #[test]
@@ -193,27 +280,40 @@ mod tests {
     fn test_set_websocket() {
         let mut config = Config::new();
         config.websocket(true).unwrap();
-        assert_eq!(config.websocket, true);
+        assert!(config.websocket);
+    }
+
+    #[test]
+    fn test_load_empty_secret_store() {
+        setup();
+        let stored_config = Config::load(Some(TEST_CONFIG_NAME)).unwrap();
+        let config = Config::new();
+        assert_eq!(config, stored_config);
+        teardown();
     }
 
     #[test]
     fn test_store_config() {
+        setup();
         let mut config = Config::new();
         config.tenant("tenant_name_stored").unwrap();
         config.api_key("api_key_stored").unwrap();
         config.domain("domain_stored").unwrap();
         config.port(111).unwrap();
         config.websocket(true).unwrap();
-        config.save(Some("test_store_config")).unwrap();
-        let stored_config = Config::load(Some("test_store_config")).unwrap();
-        assert_eq!(config, stored_config);
+        config.save(Some(TEST_CONFIG_NAME)).unwrap();
+        // TODO: it would be great to add a statefull version of mocking this test and validate the
+        // stored config from the mock secret store
+        teardown();
     }
 
     #[test]
     fn test_store_default_config() {
+        setup();
         let mut config = Config::new();
-        config.save(Some("test_store_default_config")).unwrap();
-        let stored_config = Config::load(Some("test_store_default_config")).unwrap();
+        config.save(Some(TEST_CONFIG_NAME)).unwrap();
+        let stored_config = Config::load(Some(TEST_CONFIG_NAME)).unwrap();
         assert_eq!(config, stored_config);
+        teardown();
     }
 }
