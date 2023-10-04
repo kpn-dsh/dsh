@@ -18,11 +18,8 @@ mock_os_secret_store = []
 base64 = "0.21"
 clap = { version = "4", features = ["derive"] }
 confy = "0.5"
-crossterm = "0.27"
-dialoguer = "0.11"
 env_logger = "0.10"
 futures = "0.3"
-jwt = "0.16"
 keyring = "2.0"
 log = "0.4"
 once_cell = "1.14"
@@ -35,5 +32,4 @@ securestore = "0.100"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.20", features = ["full"] }
-unicode-width = "0.1"
 uuid = { version = "1.1", features = ["serde", "v4"] }
