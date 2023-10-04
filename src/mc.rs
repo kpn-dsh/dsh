@@ -6,48 +6,47 @@ use std::path::PathBuf;
 
 mod client;
 
+/// Represents the command-line arguments and options for the application.
 #[derive(Parser, Debug)]
 pub struct Command {
-    /// MQTT topic (for example: "/tt/topicname/")
+    /// Specifies the MQTT topic, e.g., "/tt/topicname/".
     #[clap(short, long)]
     topic: String,
-    /// MQTT client id (will override value from token)
+    /// Optionally overrides the MQTT client ID from the token.
     #[clap(long)]
     client_id: Option<String>,
-    /// MQTT broker address (will override value from token)
+    /// Optionally overrides the MQTT broker address from the token.
     #[clap(short, long)]
     domain: Option<String>,
-    /// MQTT broker port (will override value from token)
+    /// Optionally overrides the MQTT broker port from the token.
     #[clap(short, long)]
     port: Option<u16>,
-    /// api key
+    /// Optionally overrides the API key for authentication.
     #[clap(short, long)]
     api_key: Option<String>,
     /// tenant name
     #[clap(short, long)]
     tenant: Option<String>,
-    /// claims to be added to the token (for example:  '[ { "action": "subscribe", "resource":
-    /// { "stream": "publicstreamname", "prefix": "/tt", "topic": "topicname/#", "type": "topic" }
-    /// } ]'
+    /// Claims to be added to the token, e.g., for specifying permissions.
+    /// for example:  '[ { "action": "subscribe", "resource": { "stream": "publicstreamname",
+    /// "prefix": "/tt", "topic": "topicname/#", "type": "topic" } } ]'
     #[clap(long)]
     claims: Option<String>,
-    /// MQTT message. If provided only the message will be sent and the app will exit (read no
-    /// consumption)
+    /// MQTT message to be sent. If provided, only this message will be sent and the app will exit.
     #[clap(short, long)]
     message: Option<String>,
-    /// Connection over websockets
-    // default is enforced via function not via clap
+    /// Specifies whether to connect via websockets. Default is determined by a function, not clap.
     #[clap(short, long)]
     websocket: bool,
-    /// Verbose heatbeat messages
+    /// Enables verbose heartbeat messages if set.
     #[clap(short, long)]
     verbose_heartbeat: bool,
-    /// Concise output (only print topic and message)
+    /// Enables concise output, printing only topic and message, if set.
     #[clap(short, long)]
     concise: bool,
 }
 
-// run
+/// Executes the main logic based on the provided command-line options.
 pub async fn run(opt: &Command) -> Result<(), DshError> {
     debug!("Commands input: {:?}", opt);
 
@@ -70,6 +69,7 @@ pub async fn run(opt: &Command) -> Result<(), DshError> {
 // returns the platform domain url with the order
 // 1 ) the argument given as a parameter
 // 2 ) the config
+/// Determines the platform domain URL, prioritizing the command-line argument, then the config.
 fn get_platform(opt: &Command) -> Result<String, DshError> {
     match &opt.domain {
         Some(domain) => Ok(domain.to_string()),
@@ -90,6 +90,7 @@ fn get_platform(opt: &Command) -> Result<String, DshError> {
 // return the tenant with the order
 // 1 ) the argument given as a parameter
 // 1 ) the config
+/// Determines the tenant, prioritizing the command-line argument, then the config.
 fn get_tenant(opt: &Command) -> Result<String, DshError> {
     match &opt.tenant {
         Some(tenant) => Ok(tenant.to_string()),
@@ -110,6 +111,7 @@ fn get_tenant(opt: &Command) -> Result<String, DshError> {
 // return the api key with the order
 // 1 ) the argument given as a parameter
 // 1 ) the config
+/// Determines the API key, prioritizing the command-line argument, then the config.
 fn get_api_key(opt: &Command) -> Result<String, DshError> {
     match &opt.api_key {
         Some(api_key) => Ok(api_key.to_string()),
@@ -130,6 +132,7 @@ fn get_api_key(opt: &Command) -> Result<String, DshError> {
 // return if websocket should be used
 // 1 ) the argument given as a parameter
 // 1 ) the config
+/// Determines whether to use websockets, prioritizing the command-line argument, then the config.
 fn get_websocket(opt: &Command) -> Result<bool, DshError> {
     match &opt.websocket {
         true => Ok(true),
@@ -147,8 +150,7 @@ fn get_websocket(opt: &Command) -> Result<bool, DshError> {
     }
 }
 
-// return the claims with the order
-// 1 ) the argument given as a parameter
+/// Retrieves the claims from the command-line argument.
 pub fn get_claims(opt: &Command) -> Result<Option<String>, DshError> {
     match &opt.claims {
         Some(claims) => Ok(Some(claims.to_string())),
@@ -156,21 +158,22 @@ pub fn get_claims(opt: &Command) -> Result<Option<String>, DshError> {
     }
 }
 
-// return token amount of 1
+/// Return token amount of 1 because this is a single client
 pub fn get_token_amount() -> Result<usize, DshError> {
     Ok(1)
 }
 
-// return concurrent connections of 1
+/// Returns concurrent connections of 1, because this is a single client
 pub fn get_concurrent_connections() -> Result<usize, DshError> {
     Ok(1)
 }
 
-// return output of None
+/// Returns an output of None, because we want to be a MQTT client
 pub fn get_output() -> Result<Option<PathBuf>, DshError> {
     Ok(None)
 }
 
+/// Retrieves a token, prioritizing the command-line argument, then the config.
 pub async fn get_token(opt: &Command) -> Result<Token, DshError> {
     let ra = super::tf::RequestAttributes {
         domain: get_platform(opt)?,
@@ -196,6 +199,7 @@ pub async fn get_token(opt: &Command) -> Result<Token, DshError> {
 // 1 ) the argument given as a parameter
 // 2 ) the config
 // TODO: validate if port is in to be provided token
+/// Determines the platform port, prioritizing the command-line argument, then the config.
 fn get_port(opt: &Command) -> Result<u16, DshError> {
     match &opt.port {
         Some(port) => Ok(*port),
@@ -214,6 +218,7 @@ fn get_port(opt: &Command) -> Result<u16, DshError> {
 }
 
 // returns the propaly formated topic
+/// Formats the topic properly, ensuring it starts with "/tt".
 fn get_topic(opt: &Command) -> Result<String, DshError> {
     let topic = opt.topic.clone();
 
