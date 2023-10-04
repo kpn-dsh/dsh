@@ -1,12 +1,14 @@
 use crate::error::DshError;
 use serde::{Deserialize, Serialize};
 
+/// Represents an authentication token and its attributes.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct Token {
     pub raw_token: String,
     pub token_attributes: TokenAttributes,
 }
 
+/// Contains the attributes of a token, extracted and deserialized from the raw token.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct TokenAttributes {
@@ -21,12 +23,14 @@ pub struct TokenAttributes {
     pub tenant_id: String,
 }
 
+/// Represents the claims contained within a token, defining resources and actions.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct Claims {
     resource: Resource,
     action: String,
 }
 
+/// Represents a resource in the claims of a token, defining stream, prefix, topic, and optional type.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct Resource {
     stream: String,
@@ -35,6 +39,7 @@ pub struct Resource {
     type_: Option<String>,
 }
 
+/// Contains the ports information for MQTT over SSL/TLS and WebSockets.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct Ports {
     pub mqtts: Vec<u16>,
@@ -43,6 +48,13 @@ pub struct Ports {
 
 // create new Token based on a given String
 impl Token {
+    /// Creates a new `Token` instance by parsing and deserializing a raw token string.
+    ///
+    /// # Parameters
+    /// - `raw_token`: A `String` containing the raw JWT token.
+    ///
+    /// # Returns
+    /// - `Result<Token, DshError>`: A `Token` instance on successful parsing and deserialization, or a `DshError` on failure.
     pub fn new(raw_token: String) -> Result<Token, DshError> {
         use base64::{alphabet, engine, read};
         use std::io::Read;
@@ -73,10 +85,10 @@ impl Token {
 mod test {
     use super::*;
 
-    // test Token::new()
+    /// Tests the functionality of `Token::new()` method.
     #[test]
     fn test_a_token() {
-        // this token is an example token and already expired
+        // this is an example token and already expired
         let raw_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJnZW4iOjM0MCwiZW5kcG9pbnQiOiJtcXR0LmRzaC1kZXYuZHNoLm5wLmF3cy5rcG4uY29tIiwiaXNzIjoiMCIsImNsYWltcyI6W3sicmVzb3VyY2UiOnsic3RyZWFtIjoiYWp1Y3B1YmxpYyIsInByZWZpeCI6Ii90dCIsInRvcGljIjoiYWp1Yy8jIiwidHlwZSI6InRvcGljIn0sImFjdGlvbiI6InN1YnNjcmliZSJ9XSwiZXhwIjoxNjY2Mjg0MTA0LCJwb3J0cyI6eyJtcXR0d3NzIjpbNDQzLDg0NDNdLCJtcXR0cyI6Wzg4ODNdfSwiY2xpZW50LWlkIjoiMmQzODE0ZWEtODQ5ZS00YjZlLWI0MzUtZjkyZDExZjhlMmY2IiwiaWF0IjoxNjY1NjgyOTA0LCJ0ZW5hbnQtaWQiOiJhanVjIn0.NFpVk7y4p5EeDRdPCpwlLrV0EW4JafpsUgij_Wu7ozM".to_string();
         let token = Token::new(raw_token.clone()).unwrap();
 

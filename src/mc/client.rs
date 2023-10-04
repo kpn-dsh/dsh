@@ -6,6 +6,8 @@ use std::thread;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 
+/// Represents a MQTT client that can connect to a broker, publish messages to a topic,
+/// and subscribe to a topic to receive messages.
 #[derive(Debug)]
 pub struct Client {
     client_id: String,
@@ -20,6 +22,20 @@ pub struct Client {
 }
 
 impl Client {
+    /// Creates a new `Client` instance.
+    ///
+    /// # Parameters
+    /// - `token`: A `Token` instance containing the authentication and endpoint information.
+    /// - `port`: The port number to connect to the broker.
+    /// - `topic`: The MQTT topic to subscribe to or publish messages.
+    /// - `websocket`: A boolean indicating whether to use WebSockets for the connection.
+    /// - `verbose`: A boolean indicating whether to log verbose messages.
+    /// - `concise`: A boolean indicating whether to log concise messages.
+    /// - `message`: An optional message to be published to the topic.
+    ///
+    /// # Returns
+    /// - `Ok(Client)`: A `Client` instance if the creation is successful.
+    /// - `Err(DshError)`: An error if the port is not present in the token or other issues occur.
     pub async fn new(
         token: Token,
         port: u16,
@@ -58,6 +74,11 @@ impl Client {
         })
     }
 
+    /// Connects the client to the MQTT broker and either publishes a message or subscribes to a topic based on the client configuration.
+    ///
+    /// # Returns
+    /// - `Ok(())`: If the connection and operation (publish/subscribe) are successful.
+    /// - `Err(DshError)`: If an error occurs during the operation.
     pub async fn connect(&self) -> Result<(), DshError> {
         let mut mqttoptions = MqttOptions::new(&self.client_id, &self.broker_url, self.port);
         mqttoptions.set_keep_alive(Duration::from_secs(5));
@@ -102,6 +123,15 @@ impl Client {
         Ok(())
     }
 
+    /// Publishes a message to a specified topic.
+    ///
+    /// # Parameters
+    /// - `mqttoptions`: MQTT options for the connection.
+    /// - `message`: The message to be published.
+    ///
+    /// # Returns
+    /// - `Ok(())`: If the message is published successfully.
+    /// - `Err(DshError)`: If an error occurs during publishing.
     async fn publish_message_to_topic(
         &self,
         mqttoptions: MqttOptions,
@@ -137,6 +167,14 @@ impl Client {
         Ok(())
     }
 
+    /// Subscribes the client to a specified topic and listens for incoming messages.
+    ///
+    /// # Parameters
+    /// - `mqttoptions`: MQTT options for the connection.
+    ///
+    /// # Returns
+    /// - `Ok(())`: If the subscription is successful.
+    /// - `Err(DshError)`: If an error occurs during subscription.
     async fn subscribe_to_topic(&self, mqttoptions: MqttOptions) -> Result<(), DshError> {
         info!("New client, getting an async connection");
         let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
@@ -205,6 +243,16 @@ impl Client {
         Ok(())
     }
 
+    /// Publishes a message to a specified topic.
+    ///
+    /// # Parameters
+    /// - `client`: A reference to the `AsyncClient` instance.
+    /// - `topic`: The MQTT topic to publish the message.
+    /// - `message`: The message to be published.
+    ///
+    /// # Returns
+    /// - `Ok(())`: If the message is published successfully.
+    /// - `Err(DshError)`: If an error occurs during publishing.
     async fn publish_message(
         client: &AsyncClient,
         topic: String,

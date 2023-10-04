@@ -1,5 +1,35 @@
-/// The Errors that may occur when processing a DSH Cli command
-/// It is used to wrap all errors that can occur in the dsh crate.
+/// # DshError Enum
+///
+/// `DshError` is an enumeration of all possible errors that can occur
+/// while executing a DSH CLI command or while working with the `dsh` crate.
+/// It is designed to wrap various error types into a single unified type
+/// to be used throughout the application for better error handling and management.
+///
+/// ## Variants
+///
+/// - `SerdeJson`: Errors related to serialization and deserialization using `serde_json`.
+/// - `Base64`: Errors related to Base64 encoding and decoding.
+/// - `Request`: Errors that may occur during HTTP requests using `reqwest`.
+/// - `DshCli`: Custom errors specific to DSH CLI, represented as a string.
+/// - `PortNotPresentInToken`: Error when a specified port is not present in a token.
+/// - `SecureStore`: Errors related to secure storage operations.
+/// - `Io`: Standard input/output errors.
+/// - `Client`: Errors related to MQTT client operations using `rumqttc`.
+/// - `Mqtt`: General MQTT errors using `rumqttc`.
+/// - `MqttConnection`: Errors related to MQTT connection using `rumqttc`.
+/// - `Confy`: Errors related to configuration management using `confy`.
+/// - `KeyringError`: Errors related to keyring operations.
+///
+/// ## Implementations
+///
+/// `DshError` implements various `From` traits to allow for easy conversion
+/// from other error types to `DshError`, providing a seamless way to propagate
+/// errors up the call stack and convert them into a `DshError` variant.
+///
+/// ## Display
+///
+/// It also implements the `Display` trait to facilitate user-friendly error messages
+/// when displaying or logging errors.
 #[derive(Debug)]
 pub enum DshError {
     SerdeJson(serde_json::Error),
@@ -107,6 +137,12 @@ impl From<keyring::Error> for DshError {
     }
 }
 
+/// # Display Implementation for DshError
+///
+/// This implementation of the `std::fmt::Display` trait allows for
+/// user-friendly printing of `DshError` variants. Each variant is
+/// matched and a formatted string is returned, providing a clear
+/// and descriptive error message.
 impl std::fmt::Display for DshError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -123,5 +159,53 @@ impl std::fmt::Display for DshError {
             DshError::PortNotPresentInToken(e) => write!(f, "Port not present in token: {}", e),
             DshError::KeyringError(e) => write!(f, "Keyring Error: {}", e),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_serde_json_error() {
+        let serde_result: Result<serde_json::Value, _> = serde_json::from_str("Not a valid JSON");
+        let serde_error = serde_result.unwrap_err();
+        let dsh_error: DshError = serde_error.into();
+        match dsh_error {
+            DshError::SerdeJson(_) => (),
+            _ => panic!("Incorrect error variant"),
+        }
+    }
+
+    #[test]
+    fn test_from_base64_error() {
+        let base64_error = base64::DecodeError::InvalidLength;
+        let dsh_error: DshError = base64_error.into();
+        match dsh_error {
+            DshError::Base64(_) => (),
+            _ => panic!("Incorrect error variant"),
+        }
+    }
+
+    // TODO add more test
+
+    #[test]
+    fn test_display() {
+        let serde_result: Result<serde_json::Value, _> = serde_json::from_str("Not a valid JSON");
+        let serde_error = serde_result.unwrap_err();
+        let dsh_error: DshError = serde_error.into();
+        assert_eq!(
+            format!("{}", dsh_error),
+            "SerdeJsonError: expected value at line 1 column 1"
+        );
+
+        let base64_error = base64::DecodeError::InvalidLength;
+        let dsh_error: DshError = base64_error.into();
+        assert_eq!(
+            format!("{}", dsh_error),
+            "Base64 error: Encoded text cannot have a 6-bit remainder."
+        );
+
+        // ... Similar tests for other error types ...
     }
 }
