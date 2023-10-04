@@ -10,33 +10,55 @@ use uuid::Uuid;
 
 pub mod token;
 
-#[derive(Parser, Debug)]
+/// Represents command-line arguments and options for the Command.
+///
+/// This struct is derived from clap's Parser and contains various options
+/// that can be specified by the user in the command line interface.
+#[derive(Parser, Debug, Default)]
 pub struct Command {
-    /// the name of the tenant (will overrule the config)
+    /// The name of the tenant.
+    ///
+    /// This will override the tenant name specified in the configuration.
     #[clap(short, long)]
     pub tenant: Option<String>,
-    /// the tenant specific api_key which got the privilege to fetch the tokens (will overrule the config)
+
+    /// The tenant-specific API key with privileges to fetch the tokens.
+    ///
+    /// This will override the API key specified in the configuration.
     #[clap(short = 'k', long)]
     pub api_key: Option<String>,
-    /// the platform api url (for example: poc.kpn-dsh.com) (will overrule the config)
+
+    /// The platform API URL (e.g., poc.kpn-dsh.com).
+    ///
+    /// This will override the domain specified in the configuration.
     #[clap(short, long)]
     pub domain: Option<String>,
-    /// claims to be added to the token (for example:  '[ { "action": "subscribe", "resource":
-    ///   { "stream": "publicstreamname", "prefix": "/tt", "topic": "topicname/#", "type": "topic"
-    ///   } } ]')
+
+    /// Claims to be added to the token.
+    ///
+    /// Example: '[ { "action": "subscribe", "resource": { "stream": "publicstreamname", "prefix": "/tt", "topic": "topicname/#", "type": "topic" } } ]'
     #[clap(short, long)]
     pub claims: Option<String>,
-    /// amount of tokens to fetch
+
+    /// The number of tokens to fetch.
     #[clap(short = 'a', long, default_value = "1")]
     pub token_amount: usize,
-    /// amount of concurrent connections for fetching tokens
+
+    /// The number of concurrent connections for fetching tokens.
     #[clap(short = 'k', long, default_value = "1")]
     pub concurrent_connections: usize,
-    /// Location of the output file. If not specified, the output is written to stdout.
+
+    /// The location of the output file.
+    ///
+    /// If not specified, the output is written to stdout.
     #[clap(short, long)]
     pub output: Option<PathBuf>,
 }
 
+/// Contains attributes required for making requests.
+///
+/// This struct is used to pass around request-related attributes
+/// and options in a type-safe manner.
 #[derive(Debug, Clone)]
 pub struct RequestAttributes {
     pub tenant: String,
@@ -48,7 +70,15 @@ pub struct RequestAttributes {
     pub output: Option<PathBuf>,
 }
 
-// return the claims
+/// Retrieve the claims specified in the Command options.
+///
+/// # Arguments
+///
+/// * `opt` - A reference to the Command struct containing possible user-specified claims.
+///
+/// # Returns
+///
+/// * `Result<Option<String>, DshError>` - The claims as a JSON string if specified, otherwise None.
 pub fn get_claims(opt: &Command) -> Result<Option<String>, DshError> {
     match &opt.claims {
         Some(claims) => Ok(Some(claims.to_string())),
@@ -56,9 +86,32 @@ pub fn get_claims(opt: &Command) -> Result<Option<String>, DshError> {
     }
 }
 
-// returns the platform domain url with the order
-// 1 ) the argument given as a parameter
-// 2 ) the config
+/// Get the platform domain based on user input or configuration.
+///
+/// This function retrieves the platform domain URL according to the following order of precedence:
+/// 1. Utilizes the platform domain provided as an argument to the function (if provided).
+/// 2. If no argument is provided, it retrieves the platform domain from the configuration.
+///
+/// # Arguments
+///
+/// * `opt` - A reference to the Command struct containing possible user-specified options and arguments.
+///
+/// # Returns
+///
+/// * `Result<String, DshError>` - The platform domain as a string if found, otherwise returns an error.
+///
+/// # Examples
+///
+/// ```
+/// // Example usage of `get_platform`:
+/// let platform_domain = get_platform(&command_options)?;
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Neither the argument nor the configuration provides a valid platform domain.
+/// - There are issues accessing or reading the configuration.
 fn get_platform(opt: &Command) -> Result<String, DshError> {
     match &opt.domain {
         Some(domain) => Ok(domain.to_string()),
@@ -76,9 +129,32 @@ fn get_platform(opt: &Command) -> Result<String, DshError> {
     }
 }
 
-// returns the tenant name with the order
-// 1 ) the argument given as a parameter
-// 2 ) the config
+/// Retrieve the tenant name based on user input or configuration.
+///
+/// This function determines the tenant name using the following priority:
+/// 1. Uses the tenant name provided as an argument to the function (if provided).
+/// 2. If no argument is provided, it retrieves the tenant name from the configuration.
+///
+/// # Arguments
+///
+/// * `opt` - A reference to the Command struct containing possible user-specified options and arguments.
+///
+/// # Returns
+///
+/// * `Result<String, DshError>` - The tenant name as a string if found, otherwise returns an error.
+///
+/// # Examples
+///
+/// ```
+/// // Example usage of `get_tenant`:
+/// let tenant_name = get_tenant(&command_options)?;
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Neither the argument nor the configuration provides a valid tenant name.
+/// - There are issues accessing or reading the configuration.
 fn get_tenant(opt: &Command) -> Result<String, DshError> {
     match &opt.tenant {
         Some(tenant) => Ok(tenant.to_string()),
@@ -96,9 +172,25 @@ fn get_tenant(opt: &Command) -> Result<String, DshError> {
     }
 }
 
-// returns the api_key with the order
-// 1 ) the argument given as a parameter
-// 2 ) the config
+/// Retrieve the user's API key for platform access.
+///
+/// This function obtains the user's API key by checking:
+/// 1. The API key provided as a function argument (if any).
+/// 2. The API key stored in the configuration if no argument is provided.
+///
+/// # Arguments
+///
+/// * `opt` - A reference to the Command struct containing possible user-specified options and arguments.
+///
+/// # Returns
+///
+/// * `Result<String, DshError>` - The API key as a string if found, otherwise returns an error.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Neither the argument nor the configuration provides a valid API key.
+/// - There are issues accessing or reading the configuration.
 fn get_api_key(opt: &Command) -> Result<String, DshError> {
     match &opt.api_key {
         Some(api_key) => Ok(api_key.to_string()),
@@ -116,8 +208,32 @@ fn get_api_key(opt: &Command) -> Result<String, DshError> {
     }
 }
 
-/// This token fetcher (tf) request tokens from the platform
-/// this needs either a config or the parameters to be set
+/// Request MQTT tokens from the platform.
+///
+/// This asynchronous function sends a request to the platform to retrieve MQTT tokens.
+/// It requires either a configuration or parameters to be set.
+///
+/// # Arguments
+///
+/// * `rest_token` - A String containing the REST token used for authorization.
+/// * `ra` - A reference to the RequestAttributes struct containing request parameters like domain, tenant, etc.
+///
+/// # Returns
+///
+/// * `Result<Vec<Token>, DshError>` - A vector of Token structs if the request is successful, otherwise returns an error.
+///
+/// # Examples
+///
+/// ```
+/// // Example usage of `request_mqtt_token`:
+/// let mqtt_tokens = request_mqtt_token(rest_token_string, &request_attributes).await?;
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - The platform returns a non-OK status code.
+/// - There are issues with sending the request or parsing the response.
 async fn request_mqtt_token(
     rest_token: String,
     ra: &RequestAttributes,
@@ -213,8 +329,31 @@ async fn request_mqtt_token(
     Ok(return_value)
 }
 
-/// This token fetcher (tf) request tokens from the platform
-/// this needs either a config or the parameters to be set
+/// Request a REST token from the platform.
+///
+/// This asynchronous function sends a request to the platform to retrieve a REST token.
+/// It requires either a configuration or parameters to be set.
+///
+/// # Arguments
+///
+/// * `ra` - A reference to the RequestAttributes struct containing request parameters like domain, tenant, etc.
+///
+/// # Returns
+///
+/// * `Result<String, DshError>` - A string containing the REST token if the request is successful, otherwise returns an error.
+///
+/// # Examples
+///
+/// ```
+/// // Example usage of `request_rest_token`:
+/// let rest_token = request_rest_token(&request_attributes).await?;
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - The platform returns a non-OK status code.
+/// - There are issues with sending the request or parsing the response.
 async fn request_rest_token(ra: &RequestAttributes) -> Result<String, DshError> {
     let platform = &ra.domain;
     let tenant = &ra.tenant;
@@ -239,6 +378,15 @@ async fn request_rest_token(ra: &RequestAttributes) -> Result<String, DshError> 
     }
 }
 
+/// Main function to run the token fetcher.
+///
+/// # Arguments
+///
+/// * `opt` - A reference to the Command struct containing user-specified options and arguments.
+///
+/// # Returns
+///
+/// * `Result<(), DshError>` - Returns Ok(()) if successful, otherwise returns an error.
 pub async fn run(opt: &Command) -> Result<(), DshError> {
     let request_attributes = RequestAttributes {
         domain: get_platform(opt)?,
@@ -257,8 +405,120 @@ pub async fn run(opt: &Command) -> Result<(), DshError> {
     Ok(())
 }
 
+/// Fetches tokens based on the specified request attributes.
+///
+/// # Arguments
+///
+/// * `request_attributes` - A reference to the RequestAttributes struct containing request-related attributes and options.
+///
+/// # Returns
+///
+/// * `Result<Vec<Token>, DshError>` - A vector of fetched tokens if successful, otherwise returns an error.
 pub async fn get_tokens(request_attributes: &RequestAttributes) -> Result<Vec<Token>, DshError> {
     let rest_token = request_rest_token(request_attributes).await?;
     let tokens = request_mqtt_token(rest_token, request_attributes).await?;
     Ok(tokens)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_claims_with_some() {
+        let cmd = Command {
+            claims: Some(String::from("test_claims")),
+            ..Default::default() // assuming you derive Default for Command
+        };
+        assert_eq!(get_claims(&cmd).unwrap(), Some(String::from("test_claims")));
+    }
+
+    #[test]
+    fn test_get_claims_with_none() {
+        let cmd = Command {
+            claims: None,
+            ..Default::default()
+        };
+        assert_eq!(get_claims(&cmd).unwrap(), None);
+    }
+
+    #[test]
+    fn test_get_platform_with_domain() {
+        let cmd = Command {
+            domain: Some(String::from("test_domain")),
+            ..Default::default()
+        };
+        assert_eq!(get_platform(&cmd).unwrap(), String::from("test_domain"));
+    }
+
+    #[test]
+    fn test_get_platform_without_domain() {
+        let cmd = Command {
+            domain: None,
+            ..Default::default()
+        };
+        // Assuming you have a domain in your config
+        assert_eq!(
+            get_platform(&cmd).unwrap(),
+            String::from("api.poc.kpn-dsh.com")
+        );
+    }
+
+    #[test]
+    fn test_get_tenant_with_tenant() {
+        let cmd = Command {
+            tenant: Some(String::from("test_tenant")),
+            ..Default::default()
+        };
+        assert_eq!(get_tenant(&cmd).unwrap(), String::from("test_tenant"));
+    }
+
+    #[test]
+    fn test_get_tenant_without_tenant() {
+        // Act
+        let cmd = Command {
+            tenant: None,
+            ..Default::default()
+        };
+
+        let result = get_tenant(&cmd);
+
+        // Assert
+        assert!(
+            result.is_err(),
+            "Expected an error due to missing tenant configuration."
+        );
+
+        let err_msg = result.unwrap_err().to_string();
+        let expected_err_msg =
+            "DshCli error: No tenant configured. Please use the config command to set the tenant.";
+        assert_eq!(err_msg, expected_err_msg, "Unexpected error message.");
+    }
+
+    #[test]
+    fn test_get_api_key_with_key() {
+        let cmd = Command {
+            api_key: Some(String::from("test_key")),
+            ..Default::default()
+        };
+        assert_eq!(get_api_key(&cmd).unwrap(), String::from("test_key"));
+    }
+
+    #[test]
+    fn test_get_api_key_without_key() {
+        // Act
+        let cmd = Command {
+            api_key: None,
+            ..Default::default()
+        };
+
+        let result = get_api_key(&cmd);
+
+        // Assert
+        assert!(result.is_err(), "Expected an error due to missing API key.");
+
+        let err_msg = result.unwrap_err().to_string();
+        let expected_err_msg = "DshCli error: No api_key configured. Please use the config command to set the api_key.";
+        assert_eq!(err_msg, expected_err_msg, "Unexpected error message.");
+    }
 }
