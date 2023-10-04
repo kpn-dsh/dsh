@@ -4,9 +4,7 @@
 [![codecov](https://codecov.io/gh/kpn-dsh/dsh/graph/badge.svg?token=CN033VD669)](https://codecov.io/gh/kpn-dsh/dsh)
 
 ## Maturity
-It is still very early days for this application. No real testing or looking at security implications has been conducted. Don't use this tool for any real project.
-
-!!! secrets (like the API key) are not securly stored on OS, but in plain text. !!!
+It is still very early days for this application. No real testing or looking at security implications has been conducted. 
 
 ## General discription
 A CLI application for the [`KPN Data Services Hub (DSH)`](https://kpn.com/dsh), featuring:

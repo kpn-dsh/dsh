@@ -2,6 +2,7 @@ use crate::error::DshError;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::sync::Mutex;
 use std::sync::RwLock;
 
@@ -28,7 +29,7 @@ pub struct Command {
     /// Set if connection goes over websocket
     #[clap(short, long)]
     websocket: Option<bool>,
-    /// See the current configuration
+    /// See the current configuration, including the full unmasked API-key
     #[clap(short, long)]
     show_all: bool,
     /// Clean the OS secret store
@@ -45,7 +46,22 @@ pub static CONFIG: Lazy<Mutex<Config>> = Lazy::new(|| {
     Mutex::new(c)
 });
 
-/// Represents the application configuration.
+/// A configuration structure used for managing settings.
+///
+/// This structure holds various configuration parameters used in the application, such as API keys, domain names, etc.
+///
+/// # Examples
+///
+/// ```
+/// let config = Config {
+///     tenant: String::from("example_tenant"),
+///     api_key: String::from("secret_api_key"),
+///     domain: String::from("example.com"),
+///     port: 8080,
+///     websocket: false,
+/// };
+/// println!("{}", config);
+/// ```
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Config {
     pub tenant: String,
@@ -56,7 +72,7 @@ pub struct Config {
 }
 
 // Default values for Config
-impl ::std::default::Default for Config {
+impl std::default::Default for Config {
     fn default() -> Self {
         Config {
             tenant: "".to_string(),
@@ -180,34 +196,83 @@ impl Config {
     }
 }
 
-/// Main function to run the application based on the provided command-line options
+/// Implementing display trait for Config struct.
+///
+/// This implementation allows for pretty-printing of `Config` instances,
+/// while also ensuring that sensitive information (like the API key) is masked when printed.
+impl fmt::Display for Config {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Mask the API key, showing only the last 4 characters.
+        //
+        // If the API key is shorter than 4 characters, it will be fully masked.
+        // Otherwise, all but the last 4 characters will be replaced with asterisks (`*`).
+        let masked_api_key = if self.api_key.len() > 4 {
+            format!(
+                "{}{}",
+                "*".repeat(self.api_key.len() - 4),
+                &self.api_key[self.api_key.len() - 4..]
+            )
+        } else {
+            "*".repeat(self.api_key.len())
+        };
+
+        // Write the formatted `Config` instance to the provided formatter.
+        //
+        // The `Config` instance will be written in the following format:
+        //
+        // ```plaintext
+        // Tenant: [tenant]
+        // API Key: [masked_api_key]
+        // Domain: [domain]
+        // Port: [port]
+        // Websocket: [websocket]
+        // ```
+        write!(
+            f,
+            "Tenant: {}\nAPI Key: {}\nDomain: {}\nPort: {}\nWebsocket: {}",
+            self.tenant, masked_api_key, self.domain, self.port, self.websocket
+        )
+    }
+}
+
+// Main function to run the application based on the provided command-line options
 pub fn run(opt: &Command) -> Result<(), DshError> {
     // store opt values in config
     let mut config = CONFIG.lock().unwrap();
+    let mut any_option_set = false; // Flag to check if any option is set
+
     if let Some(tenant) = &opt.tenant {
         config.tenant = tenant.to_string();
+        any_option_set = true;
     }
     if let Some(api_key) = &opt.api_key {
         config.api_key = api_key.to_string();
+        any_option_set = true;
     }
     if let Some(domain) = &opt.domain {
         config.domain = domain.to_string();
+        any_option_set = true;
     }
     if let Some(port) = &opt.port {
         config.port = *port;
+        any_option_set = true;
     }
     if let Some(websocket) = &opt.websocket {
         config.websocket = *websocket;
+        any_option_set = true;
     }
     if opt.show_all {
-        println!("tenant: {}", config.tenant);
-        println!("api_key: {}", config.api_key);
-        println!("domain: {}", config.domain);
-        println!("port: {}", config.port);
-        println!("websocket: {}", config.websocket);
+        println!(
+            "Tenant: {}\nAPI Key: {}\nDomain: {}\nPort: {}\nWebsocket: {}",
+            config.tenant, config.api_key, config.domain, config.port, config.websocket
+        );
+        any_option_set = true;
     }
     if opt.clean_secret_store {
         return Config::clean_secret_store(None);
+    }
+    if !any_option_set {
+        println!("{}", config);
     }
     config.save(None)?;
     Ok(())
