@@ -2,6 +2,7 @@ use crate::error::DshError;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::sync::Mutex;
 use std::sync::RwLock;
 
@@ -56,7 +57,7 @@ pub struct Config {
 }
 
 // Default values for Config
-impl ::std::default::Default for Config {
+impl std::default::Default for Config {
     fn default() -> Self {
         Config {
             tenant: "".to_string(),
@@ -180,7 +181,28 @@ impl Config {
     }
 }
 
-/// Main function to run the application based on the provided command-line options
+impl fmt::Display for Config {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Mask the API key, showing only the last 4 characters
+        let masked_api_key = if self.api_key.len() > 4 {
+            format!(
+                "{}{}",
+                "*".repeat(self.api_key.len() - 4),
+                &self.api_key[self.api_key.len() - 4..]
+            )
+        } else {
+            "*".repeat(self.api_key.len())
+        };
+
+        write!(
+            f,
+            "Tenant: {}\nAPI Key: {}\nDomain: {}\nPort: {}\nWebsocket: {}",
+            self.tenant, masked_api_key, self.domain, self.port, self.websocket
+        )
+    }
+}
+
+// Main function to run the application based on the provided command-line options
 pub fn run(opt: &Command) -> Result<(), DshError> {
     // store opt values in config
     let mut config = CONFIG.lock().unwrap();
@@ -205,6 +227,7 @@ pub fn run(opt: &Command) -> Result<(), DshError> {
         println!("domain: {}", config.domain);
         println!("port: {}", config.port);
         println!("websocket: {}", config.websocket);
+        println!("{}", config);
     }
     if opt.clean_secret_store {
         return Config::clean_secret_store(None);
