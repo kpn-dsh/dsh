@@ -1,7 +1,9 @@
 use crate::error::DshError;
 use crate::tf::token::Token;
 use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, Outgoing, PubAck, QoS, Transport};
-use rustls::ClientConfig;
+//use rustls::ClientConfig;
+use rumqttc::tokio_rustls::rustls::ClientConfig; // Use the correct ClientConfig type
+use rustls::RootCertStore;
 use std::thread;
 use std::time::Duration;
 use tokio::runtime::Runtime;
@@ -84,25 +86,32 @@ impl Client {
         mqttoptions.set_keep_alive(Duration::from_secs(5));
 
         // load (OS) tls certs
-        let mut root_cert_store = rustls::RootCertStore::empty();
-        for cert in rustls_native_certs::load_native_certs().expect("could not load platform certs")
-        {
-            root_cert_store.add(&rustls::Certificate(cert.0)).unwrap();
-        }
+        let mut root_cert_store = RootCertStore::empty();
+        root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
 
-        // secure client config
+        /*
+        let mut client_config = ClientConfig::builder()
+            .with_root_certificates(root_cert_store)
+            .with_no_client_auth();
+        */
+
+      //  let mut client_config = ClientConfig::builder().with_safe_defaults();
+// secure client config
         let client_config = ClientConfig::builder()
             .with_safe_defaults()
             .with_root_certificates(root_cert_store)
             .with_no_client_auth();
 
+        let tls_config: rumqttc::TlsConfiguration = client_config.into();
+
+
         // if websockets are used
         if self.websocket {
             info!("Websockets will be used");
-            mqttoptions.set_transport(Transport::Wss(client_config.into()));
+            mqttoptions.set_transport(Transport::Wss(tls_config));
         } else {
             info!("Tcp will be used (no websockets)");
-            mqttoptions.set_transport(Transport::tls_with_config(client_config.into()));
+            mqttoptions.set_transport(Transport::tls_with_config(tls_config));
         }
 
         // set tls options and credentials
