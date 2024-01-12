@@ -17,7 +17,7 @@ mock_os_secret_store = []
 [dependencies]
 base64 = "0.21"
 clap = { version = "4", features = ["derive"] }
-confy = "0.5"
+confy = "0.6"
 env_logger = "0.10"
 futures = "0.3"
 keyring = "2.0"
