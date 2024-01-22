@@ -18,7 +18,7 @@ mock_os_secret_store = []
 base64 = "0.21"
 clap = { version = "4", features = ["derive"] }
 confy = "0.5"
-env_logger = "0.10"
+env_logger = "0.11"
 futures = "0.3"
 keyring = "2.0"
 log = "0.4"
